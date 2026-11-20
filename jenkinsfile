@@ -1,0 +1,47 @@
+pipeline {
+    agent any
+
+    tools {
+        // Ensure these names match what you configured in Jenkins (Manage Jenkins > Tools)
+        jdk 'jdk-17'
+        maven 'maven-3'
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                // Compiles the code and packages the JAR/WAR without running tests yet
+                sh 'mvn -B -DskipTests clean package'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                // Runs unit tests
+                sh 'mvn test'
+            }
+            post {
+                always {
+                    // Publishes JUnit test results to the Jenkins UI
+                    junit 'target/surefire-reports/*.xml'
+                }
+            }
+        }
+
+        stage('Archive') {
+            steps {
+                // Saves the built JAR/WAR file in Jenkins
+                archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Build and tests succeeded!'
+        }
+        failure {
+            echo 'Pipeline failed. Check the console output.'
+        }
+    }
+}
